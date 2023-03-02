@@ -1,6 +1,6 @@
 namespace GoogleSheetsToUnity
 {
-    public class GoogleSheetsRequest
+    public class GoogleSheetRequest
     {
         public readonly string sheetId = "";
         public readonly string worksheetName = "Sheet1";
@@ -11,20 +11,20 @@ namespace GoogleSheetsToUnity
         public readonly string titleColumn = "A";
         public readonly int titleRow = 1;
 
-        public GoogleSheetsRequest(string sheetId, string worksheetName)
+        public GoogleSheetRequest(string sheetId, string worksheetName)
         {
             this.sheetId = sheetId;
             this.worksheetName = worksheetName;
         }
 
-        public GoogleSheetsRequest(string sheetId, string worksheetName, string startCell)
+        public GoogleSheetRequest(string sheetId, string worksheetName, string startCell)
         {
             this.sheetId = sheetId;
             this.worksheetName = worksheetName;
             this.startCell = startCell;
         }
 
-        public GoogleSheetsRequest(string sheetId, string worksheetName, string startCell, string endCell)
+        public GoogleSheetRequest(string sheetId, string worksheetName, string startCell, string endCell)
         {
             this.sheetId = sheetId;
             this.worksheetName = worksheetName;
@@ -32,7 +32,7 @@ namespace GoogleSheetsToUnity
             this.endCell = endCell;
         }
 
-        public GoogleSheetsRequest(string sheetId, string worksheetName, string startCell, string endCell, string titleColumn, int titleRow)
+        public GoogleSheetRequest(string sheetId, string worksheetName, string startCell, string endCell, string titleColumn, int titleRow)
         {
             this.sheetId = sheetId;
             this.worksheetName = worksheetName;

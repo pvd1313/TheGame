@@ -7,17 +7,17 @@ using UnityEngine.Networking;
 
 namespace GoogleSheetsToUnity
 {
-    public class SpreadsheetManager
+    public class GoogleSheetManager
     {
-        static GoogleSheetsConfig _config;
+        static GoogleSheetConfig _config;
         
-        public static GoogleSheetsConfig Config
+        public static GoogleSheetConfig Config
         {
             get
             {
                 if (_config == null)
                 {
-                    _config = (GoogleSheetsConfig) Resources.Load("GSTU_Config");
+                    _config = (GoogleSheetConfig) Resources.Load("GSTU_Config");
                 }
 
                 return _config;
@@ -38,7 +38,7 @@ namespace GoogleSheetsToUnity
 #endif
         }    
         
-        public static void Read(GoogleSheetsRequest search, UnityAction<SpreadsheetData> callback, bool containsMergedCells = false)
+        public static void Read(GoogleSheetRequest search, UnityAction<SpreadsheetData> callback, bool containsMergedCells = false)
         {
             var sb = new StringBuilder();
             sb.Append("https://sheets.googleapis.com/v4/spreadsheets");
@@ -61,7 +61,7 @@ namespace GoogleSheetsToUnity
 #endif
         }
 
-        private static IEnumerator Read(UnityWebRequest request, GoogleSheetsRequest search, bool containsMergedCells, UnityAction<SpreadsheetData> callback)
+        private static IEnumerator Read(UnityWebRequest request, GoogleSheetRequest search, bool containsMergedCells, UnityAction<SpreadsheetData> callback)
         {
             if (Application.isPlaying)
             {

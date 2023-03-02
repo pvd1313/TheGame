@@ -2,7 +2,7 @@
 
 namespace GoogleSheetsToUnity
 {
-    public class GoogleSheetsConfig : ScriptableObject
+    public class GoogleSheetConfig : ScriptableObject
     {
         public string CLIENT_ID = "";
         public string CLIENT_SECRET = "";

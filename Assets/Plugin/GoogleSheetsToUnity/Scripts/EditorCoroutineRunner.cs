@@ -43,8 +43,10 @@ namespace GoogleSheetsToUnity
         private static void Runner()
         {
             // Tick all the coroutines we have stored
-            foreach (var state in _coroutineStates)
+            for (var index = 0; index < _coroutineStates.Count; index++)
             {
+                var state = _coroutineStates[index];
+                
                 TickState(state);
             }
 

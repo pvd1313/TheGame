@@ -8,7 +8,7 @@ namespace GoogleSheetsToUnity.Editor
 {
     public class GoogleSheetsEditorWindow : EditorWindow
     {
-        private GoogleSheetsConfig _config;
+        private GoogleSheetConfig _config;
         private bool _showSecret;
         private int _tabID;
 
@@ -28,7 +28,7 @@ namespace GoogleSheetsToUnity.Editor
 
         private void Initialize()
         {
-            _config = (GoogleSheetsConfig)Resources.Load("GSTU_Config");
+            _config = (GoogleSheetConfig)Resources.Load("GSTU_Config");
         }
 
         private void OnGUI()
