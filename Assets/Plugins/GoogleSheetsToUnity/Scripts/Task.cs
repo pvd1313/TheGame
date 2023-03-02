@@ -6,32 +6,15 @@
 using UnityEngine;
 using System.Collections;
 
-namespace GoogleSheetsToUnity.ThirdPary
+namespace GoogleSheetsToUnity
 {
     /// A Task object represents a coroutine.  Tasks can be started, paused, and stopped.
     /// It is an error to attempt to start a task that has been stopped or which has
     /// naturally terminated.
     internal class Task
     {
-        /// Returns true if and only if the coroutine is running.  Paused tasks
-        /// are considered to be running.
-        public bool Running
-        {
-            get
-            {
-                return task.Running;
-            }
-        }
-
-        /// Returns true if and only if the coroutine is currently paused.
-        public bool Paused
-        {
-            get
-            {
-                return task.Paused;
-            }
-        }
-
+        private readonly TaskManager.TaskState _task;
+        
         /// Delegate for termination subscribers.  manual is true if and only if
         /// the coroutine was stopped with an explicit call to Stop().
         public delegate void FinishedHandler(bool manual);
@@ -45,8 +28,8 @@ namespace GoogleSheetsToUnity.ThirdPary
         /// upon construction.
         public Task(IEnumerator c, bool autoStart = true)
         {
-            task = TaskManager.CreateTask(c);
-            task.Finished += TaskFinished;
+            _task = TaskManager.CreateTask(c);
+            _task.Finished += TaskFinished;
             if (autoStart)
                 Start();
         }
@@ -57,99 +40,49 @@ namespace GoogleSheetsToUnity.ThirdPary
         }
 
         /// Begins execution of the coroutine
-        public void Start()
+        private void Start()
         {
-            task.Start();
+            _task.Start();
         }
 
-        /// Discontinues execution of the coroutine at its next yield.
-        public void Stop()
-        {
-            task.Stop();
-        }
-
-        public void Pause()
-        {
-            task.Pause();
-        }
-
-        public void Unpause()
-        {
-            task.Unpause();
-        }
-
-        void TaskFinished(bool manual)
+        private void TaskFinished(bool manual)
         {
             FinishedHandler handler = Finished;
             if (handler != null)
                 handler(manual);
         }
-
-        TaskManager.TaskState task;
     }
 
     internal class TaskManager : MonoBehaviour
     {
         public class TaskState
         {
-            public bool Running
-            {
-                get
-                {
-                    return running;
-                }
-            }
-
-            public bool Paused
-            {
-                get
-                {
-                    return paused;
-                }
-            }
-
             public delegate void FinishedHandler(bool manual);
             public event FinishedHandler Finished;
 
-            IEnumerator coroutine;
-            bool running;
-            bool paused;
-            bool stopped;
+            private readonly IEnumerator _coroutine;
+            private bool _running;
+            private bool _paused;
+            private bool _stopped;
 
             public TaskState(IEnumerator c)
             {
-                coroutine = c;
-            }
-
-            public void Pause()
-            {
-                paused = true;
-            }
-
-            public void Unpause()
-            {
-                paused = false;
+                _coroutine = c;
             }
 
             public void Start()
             {
-                running = true;
-                singleton.StartCoroutine(CallWrapper());
+                _running = true;
+                _singleton.StartCoroutine(CallWrapper());
             }
 
-            public void Stop()
-            {
-                stopped = true;
-                running = false;
-            }
-
-            IEnumerator CallWrapper()
+            private IEnumerator CallWrapper()
             {
                 yield return null;
-                IEnumerator e = coroutine;
-                while (running)
+                IEnumerator e = _coroutine;
+                while (_running)
                 {
-                    if (paused)
+                    if (_paused)
                         yield return null;
                     else
                     {
@@ -159,25 +92,25 @@ namespace GoogleSheetsToUnity.ThirdPary
                         }
                         else
                         {
-                            running = false;
+                            _running = false;
                         }
                     }
                 }
 
                 FinishedHandler handler = Finished;
                 if (handler != null)
-                    handler(stopped);
+                    handler(_stopped);
             }
         }
-
-        static TaskManager singleton;
+        
+        private static TaskManager _singleton;
 
         public static TaskState CreateTask(IEnumerator coroutine)
         {
-            if (singleton == null)
+            if (_singleton == null)
             {
                 GameObject go = new GameObject("TaskManager");
-                singleton = go.AddComponent<TaskManager>();
+                _singleton = go.AddComponent<TaskManager>();
                 go.hideFlags = HideFlags.HideAndDontSave;
             }
             return new TaskState(coroutine);

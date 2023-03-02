@@ -9,114 +9,60 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine.Networking;
 
-namespace GoogleSheetsToUnity.ThirdPary
+namespace GoogleSheetsToUnity
 {
     public class EditorCoroutineRunner
     {
-        private static List<EditorCoroutineState> coroutineStates;
-        private static List<EditorCoroutineState> finishedThisUpdate;
-        private static EditorCoroutineState uiCoroutineState;
-
-        /// <summary>
-        /// Start a coroutine. equivilent of calling StartCoroutine on a mono behaviour
-        /// </summary>
+        private static List<EditorCoroutineState> _coroutineStates;
+        private static List<EditorCoroutineState> _finishedThisUpdate;
+        private static EditorCoroutineState _uiCoroutineState;
+        
         public static EditorCoroutine StartCoroutine(IEnumerator coroutine)
         {
             return StoreCoroutine(new EditorCoroutineState(coroutine));
         }
 
-        /// <summary>
-        /// Start a coroutine and display a progress UI. only one EditorCoroutine can display a UI at once. equivilent of calling StartCoroutine on a mono behaviour
-        /// </summary>
-        /// <param name="coroutine">coroutine to run</param>
-        /// <param name="title">Text to show in the UIs title bar</param>
-        /// <param name="isCancelable">Displays a cancel button if true</param>
-        public static EditorCoroutine StartCoroutineWithUI(IEnumerator coroutine, string title, bool isCancelable = false)
-        {
-            if (uiCoroutineState != null)
-            {
-                Debug.LogError("EditorCoroutineRunner only supports running one coroutine that draws a GUI! [" + title + "]");
-                return null;
-            }
-            EditorCoroutineRunner.uiCoroutineState = new EditorCoroutineState(coroutine, title, isCancelable);
-            return StoreCoroutine(uiCoroutineState);
-        }
-
         // Creates objects to manage the coroutines lifecycle and stores them away to be processed
         private static EditorCoroutine StoreCoroutine(EditorCoroutineState state)
         {
-            if (coroutineStates == null)
+            if (_coroutineStates == null)
             {
-                coroutineStates = new List<EditorCoroutineState>();
-                finishedThisUpdate = new List<EditorCoroutineState>();
+                _coroutineStates = new List<EditorCoroutineState>();
+                _finishedThisUpdate = new List<EditorCoroutineState>();
             }
 
-            if (coroutineStates.Count == 0)
+            if (_coroutineStates.Count == 0)
                 EditorApplication.update += Runner;
 
-            coroutineStates.Add(state);
+            _coroutineStates.Add(state);
 
             return state.editorCoroutineYieldInstruction;
-        }
-
-        /// <summary>
-        /// Updates the status label in the EditorCoroutine runner UI
-        /// </summary>
-        public static void UpdateUILabel(string label)
-        {
-            if (uiCoroutineState != null && uiCoroutineState.showUI)
-            {
-                uiCoroutineState.Label = label;
-            }
-        }
-
-        /// <summary>
-        /// Updates the progress bar in the EditorCoroutine runner UI
-        /// </summary>
-        public static void UpdateUIProgressBar(float percent)
-        {
-            if (uiCoroutineState != null && uiCoroutineState.showUI)
-            {
-                uiCoroutineState.PercentComplete = percent;
-            }
-        }
-
-        /// <summary>
-        /// Updates the status label and progress bar in the EditorCoroutine runner UI
-        /// </summary>
-        public static void UpdateUI(string label, float percent)
-        {
-            if (uiCoroutineState != null && uiCoroutineState.showUI)
-            {
-                uiCoroutineState.Label = label;
-                uiCoroutineState.PercentComplete = percent;
-            }
         }
 
         // Manages running active coroutines!
         private static void Runner()
         {
             // Tick all the coroutines we have stored
-            for (int i = 0; i < coroutineStates.Count; i++)
+            foreach (var state in _coroutineStates)
             {
-                TickState(coroutineStates[i]);
+                TickState(state);
             }
 
-            // if a coroutine was finished whilst we were ticking, clear it out now
-            for (int i = 0; i < finishedThisUpdate.Count; i++)
+            // If a coroutine was finished whilst we were ticking, clear it out now
+            foreach (var state in _finishedThisUpdate)
             {
-                coroutineStates.Remove(finishedThisUpdate[i]);
+                _coroutineStates.Remove(state);
 
-                if (uiCoroutineState == finishedThisUpdate[i])
+                if (_uiCoroutineState == state)
                 {
-                    uiCoroutineState = null;
+                    _uiCoroutineState = null;
                     EditorUtility.ClearProgressBar();
                 }
             }
-            finishedThisUpdate.Clear();
+            _finishedThisUpdate.Clear();
 
-            // stop the runner if were done.
-            if (coroutineStates.Count == 0)
+            // Stop the runner if were done.
+            if (_coroutineStates.Count == 0)
             {
                 EditorApplication.update -= Runner;
             }
@@ -129,50 +75,17 @@ namespace GoogleSheetsToUnity.ThirdPary
                 // This coroutine is still valid, give it a chance to tick!
                 state.Tick();
 
-                // if this coroutine is the active UI coroutine, give it a chance to update the UI
-                if (state.showUI && uiCoroutineState == state)
+                // If this coroutine is the active UI coroutine, give it a chance to update the UI
+                if (state.showUI && _uiCoroutineState == state)
                 {
-                    uiCoroutineState.UpdateUI();
+                    _uiCoroutineState.UpdateUI();
                 }
             }
             else
             {
                 // We have finished running the coroutine, lets scrap it
-                finishedThisUpdate.Add(state);
+                _finishedThisUpdate.Add(state);
             }
-        }
-
-        // Special thanks to Thomas for donating the following two methods 
-        // Github: @ThomasBousquet
-        // Twitter: @VimesTom    
-        private static bool KillCoroutine(ref EditorCoroutine coroutine, ref List<EditorCoroutineState> states)
-        {
-            foreach (EditorCoroutineState state in states)
-            {
-                if (state.editorCoroutineYieldInstruction == coroutine)
-                {
-                    states.Remove(state);
-                    coroutine = null;
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        public static void KillCoroutine(ref EditorCoroutine coroutine)
-        {
-            if (uiCoroutineState.editorCoroutineYieldInstruction == coroutine)
-            {
-                uiCoroutineState = null;
-                coroutine = null;
-                EditorUtility.ClearProgressBar();
-                return;
-            }
-            if (KillCoroutine(ref coroutine, ref coroutineStates))
-                return;
-
-            if (KillCoroutine(ref coroutine, ref finishedThisUpdate))
-                return;
         }
     }
 
@@ -208,19 +121,6 @@ namespace GoogleSheetsToUnity.ThirdPary
             lastUpdateTime = DateTime.Now;
         }
 
-        public EditorCoroutineState(IEnumerator coroutine, string title, bool isCancelable)
-        {
-            this.coroutine = coroutine;
-            editorCoroutineYieldInstruction = new EditorCoroutine();
-            showUI = true;
-            cancelable = isCancelable;
-            this.title = title;
-            Label = "initializing....";
-            PercentComplete = 0.0f;
-
-            lastUpdateTime = DateTime.Now;
-        }
-
         public void Tick()
         {
             if (coroutine != null)
@@ -252,15 +152,6 @@ namespace GoogleSheetsToUnity.ThirdPary
                     {
                         // These dont make sense in editor, so we will treat them the same as a null return...
                         isWaiting = false;
-                    }
-                    else if (currentType == typeof(WWW))
-                    {
-                        // Web download request, lets see if its done!
-                        var www = current as WWW;
-                        if (!www.isDone)
-                        {
-                            isWaiting = true;
-                        }
                     }
                     else if (currentType == typeof(UnityWebRequestAsyncOperation))
                     {
@@ -407,39 +298,8 @@ namespace GoogleSheetsToUnity.ThirdPary
         public bool HasLabelUpdate;
         public bool HasPercentUpdate;
 
-        public override bool keepWaiting
-        {
-            get
-            {
-                // always go to the next update
-                return false;
-            }
-        }
-
-        public EditorStatusUpdate(string label)
-        {
-            HasPercentUpdate = false;
-
-            HasLabelUpdate = true;
-            Label = label;
-        }
-
-        public EditorStatusUpdate(float percent)
-        {
-            HasPercentUpdate = true;
-            PercentComplete = percent;
-
-            HasLabelUpdate = false;
-        }
-
-        public EditorStatusUpdate(string label, float percent)
-        {
-            HasPercentUpdate = true;
-            PercentComplete = percent;
-
-            HasLabelUpdate = true;
-            Label = label;
-        }
+        // Always go to the next update
+        public override bool keepWaiting => false;
     }
 
     /// <summary>

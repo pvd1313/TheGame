@@ -1,5 +1,4 @@
-﻿using GoogleSheetsToUnity.ThirdPary;
-using System;
+﻿using System;
 using System.Collections;
 using System.Net;
 using System.Text;
@@ -11,12 +10,13 @@ using UnityEngine.Networking;
 
 namespace GoogleSheetsToUnity
 {
-    public class GoogleAuthrisationHelper : MonoBehaviour
+    public class GoogleAuthHelper : MonoBehaviour
     {
-        static string _authToken = "";
+        private static string _authToken = "";
+        
+        private const string HtmlResponseContent = "<h1>Google Sheets and Unity are now linked, you may close this window</h1>";
 
-        static HttpListener _httpListener;
-        static string _htmlResponseContent = "<h1>Google Sheets and Unity are now linked, you may close this window</h1>"; //message shown after connection has been set up
+        private static HttpListener _httpListener;
 
         private static object _notifyAuthTokenLock = new object();
         private static bool _shouldNotifyAuthTokenReceived = false;
@@ -32,7 +32,7 @@ namespace GoogleSheetsToUnity
             }
             _onComplete = null;
 
-            string serverUrl = string.Format("http://127.0.0.1:{0}", SpreadsheetManager.Config.PORT);
+            var serverUrl = $"http://127.0.0.1:{SpreadsheetManager.Config.PORT}";
 
             _httpListener = new HttpListener();
             _httpListener.Prefixes.Add(serverUrl + "/");
@@ -41,7 +41,7 @@ namespace GoogleSheetsToUnity
 
             _onComplete += GetAuthComplete;
 
-            string request = "https://accounts.google.com/o/oauth2/v2/auth?";
+            var request = "https://accounts.google.com/o/oauth2/v2/auth?";
             request += "client_id=" + Uri.EscapeDataString(SpreadsheetManager.Config.CLIENT_ID) + "&";
             request += "redirect_uri=" + Uri.EscapeDataString(serverUrl) + "&";
             request += "response_type=" + "code" + "&";
@@ -53,14 +53,14 @@ namespace GoogleSheetsToUnity
             Application.OpenURL(request);
         }
 
-        static void GetAuthComplete(string authToken)
+        private static void GetAuthComplete(string authToken)
         {
-            string serverUrl = string.Format("http://127.0.0.1:{0}", SpreadsheetManager.Config.PORT);
+            var serverUrl = string.Format("http://127.0.0.1:{0}", SpreadsheetManager.Config.PORT);
 
             Debug.Log(authToken);
             Debug.Log("Auth Token = " + authToken);
 
-            WWWForm f = new WWWForm();
+            var f = new WWWForm();
             f.AddField("code", authToken);
             f.AddField("client_id", SpreadsheetManager.Config.CLIENT_ID);
             f.AddField("client_secret", SpreadsheetManager.Config.CLIENT_SECRET);
@@ -73,24 +73,22 @@ namespace GoogleSheetsToUnity
 
         static IEnumerator GetToken(WWWForm f)
         {
-            using (UnityWebRequest request = UnityWebRequest.Post("https://accounts.google.com/o/oauth2/token", f))
-            {
-                yield return request.SendWebRequest();
+            using var request = UnityWebRequest.Post("https://accounts.google.com/o/oauth2/token", f);
+            yield return request.SendWebRequest();
 
-                SpreadsheetManager.Config.gdr = JsonUtility.FromJson<GoogleDataResponse>(request.downloadHandler.text);
-                SpreadsheetManager.Config.gdr.nextRefreshTime = DateTime.Now.AddSeconds(SpreadsheetManager.Config.gdr.expires_in);
-                EditorUtility.SetDirty(SpreadsheetManager.Config);
-                AssetDatabase.SaveAssets();
-            }
+            SpreadsheetManager.Config.gdr = JsonUtility.FromJson<GoogleDataResponse>(request.downloadHandler.text);
+            SpreadsheetManager.Config.gdr.nextRefreshTime = DateTime.Now.AddSeconds(SpreadsheetManager.Config.gdr.expires_in);
+            EditorUtility.SetDirty(SpreadsheetManager.Config);
+            AssetDatabase.SaveAssets();
         }
 
-        static void ListenerCallback(IAsyncResult result)
+        private static void ListenerCallback(IAsyncResult result)
         {
             if (_httpListener != null)
             {
                 try
                 {
-                    HttpListenerContext context = _httpListener.EndGetContext(result);
+                    var context = _httpListener.EndGetContext(result);
                     HandleListenerContextResponse(context);
                     ProcessListenerContext(context);
 
@@ -108,20 +106,20 @@ namespace GoogleSheetsToUnity
             }
         }
 
-        static void ProcessListenerContext(HttpListenerContext context)
+        private static void ProcessListenerContext(HttpListenerContext context)
         {
             // Attempt to pull out the URI fragment as a part of the query string.
-            string uriFragment = context.Request.QueryString["code"];
+            var uriFragment = context.Request.QueryString["code"];
             if (uriFragment != null)
             { // If it worked, that means we're being passed the auth token from Instagram, so pull it out and notify that we received it.
-                string authToken = uriFragment.Replace("access_token=", "");
+                var authToken = uriFragment.Replace("access_token=", "");
                 NotifyAuthTokenReceived(authToken);
             }
         }
 
         /// <summary>
         /// Child classes should call this once the auth token has been successfully retrieved.</summary>
-        static void NotifyAuthTokenReceived(string authToken)
+        private static void NotifyAuthTokenReceived(string authToken)
         {
             lock (_notifyAuthTokenLock)
             {
@@ -132,13 +130,13 @@ namespace GoogleSheetsToUnity
                 _authToken = authToken;
                 _shouldNotifyAuthTokenReceived = true;
 
-                    EditorCoroutineRunner.StartCoroutine(CheckForTokenRecieve());
+                    EditorCoroutineRunner.StartCoroutine(CheckForTokenReceive());
             }
         }
 
 
-        //Background Processes....
-        static IEnumerator CheckForTokenRecieve()
+        // Background Processes....
+        private static IEnumerator CheckForTokenReceive()
         {
             lock (_notifyAuthTokenLock)
             {
@@ -162,7 +160,7 @@ namespace GoogleSheetsToUnity
         /// Some HTML response content was passed in to the StartListening() method, and this is where we display it to the user.</summary>
         static void HandleListenerContextResponse(HttpListenerContext context)
         {
-            byte[] buffer = Encoding.UTF8.GetBytes(_htmlResponseContent);
+            var buffer = Encoding.UTF8.GetBytes(HtmlResponseContent);
             context.Response.StatusCode = (int)HttpStatusCode.OK;
             context.Response.ContentType = "text/html";
             context.Response.ContentLength64 = buffer.Length;
@@ -178,31 +176,32 @@ namespace GoogleSheetsToUnity
         /// <returns></returns>
         public static IEnumerator CheckForRefreshOfToken()
         {
-            if (DateTime.Now > SpreadsheetManager.Config.gdr.nextRefreshTime)
+            if (DateTime.Now <= SpreadsheetManager.Config.gdr.nextRefreshTime)
             {
-                Debug.Log("Refreshing Token");
+                yield break;
+            }
+            
+            Debug.Log("Refreshing Token");
 
-                WWWForm f = new WWWForm();
-                f.AddField("client_id", SpreadsheetManager.Config.CLIENT_ID);
-                f.AddField("client_secret", SpreadsheetManager.Config.CLIENT_SECRET);
-                f.AddField("refresh_token", SpreadsheetManager.Config.gdr.refresh_token);
-                f.AddField("grant_type", "refresh_token");
-                f.AddField("scope", "");
+            var f = new WWWForm();
+            f.AddField("client_id", SpreadsheetManager.Config.CLIENT_ID);
+            f.AddField("client_secret", SpreadsheetManager.Config.CLIENT_SECRET);
+            f.AddField("refresh_token", SpreadsheetManager.Config.gdr.refresh_token);
+            f.AddField("grant_type", "refresh_token");
+            f.AddField("scope", "");
 
-                using (UnityWebRequest request = UnityWebRequest.Post("https://www.googleapis.com/oauth2/v4/token", f))
-                {
-                    yield return request.SendWebRequest();
+            using var request = UnityWebRequest.Post("https://www.googleapis.com/oauth2/v4/token", f);
+                
+            yield return request.SendWebRequest();
 
-                    GoogleDataResponse newGdr = JsonUtility.FromJson<GoogleDataResponse>(request.downloadHandler.text);
-                    SpreadsheetManager.Config.gdr.access_token = newGdr.access_token;
-                    SpreadsheetManager.Config.gdr.nextRefreshTime = DateTime.Now.AddSeconds(newGdr.expires_in);
+            var newGdr = JsonUtility.FromJson<GoogleDataResponse>(request.downloadHandler.text);
+            SpreadsheetManager.Config.gdr.access_token = newGdr.access_token;
+            SpreadsheetManager.Config.gdr.nextRefreshTime = DateTime.Now.AddSeconds(newGdr.expires_in);
 
 #if UNITY_EDITOR
-                    EditorUtility.SetDirty(SpreadsheetManager.Config);
-                    AssetDatabase.SaveAssets();
+            EditorUtility.SetDirty(SpreadsheetManager.Config);
+            AssetDatabase.SaveAssets();
 #endif
-                }
-            }
         }
     }
 }
