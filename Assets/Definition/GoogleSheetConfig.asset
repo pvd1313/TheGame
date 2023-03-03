@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: GoogleSheetConfig
   m_EditorClassIdentifier: 
   fileId: 17cFdYxAfD6zz_0fi6p84sC2BbC3vUOEuLOa9E0Auyoo
-  ouputPath: Definition/
+  outputPath: Definition/
   sheets:
   - Item
   - Augmentation

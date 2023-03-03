@@ -17,7 +17,7 @@ namespace TheGame.GoogleSheet
                 return;
             }
 
-            var sheetName = config.sheets[depth];
+            string sheetName = config.sheets[depth];
             
             Debug.Log($"Fetching '{sheetName}' ({depth} / {config.sheets.Count})...");
             
@@ -58,12 +58,12 @@ namespace TheGame.GoogleSheet
 
             var metaRow = data.values[0];
 
-            for (var row = metadata.headerRowCount; row < data.values.Count; row++)
+            for (int row = metadata.headerRowCount; row < data.values.Count; row++)
             {
                 var currentRow = data.values[row];
                 
-                var anyCellWithValue = false;
-                for (var col = 1; col < Math.Min(currentRow.Count, metaRow.Count); col++)
+                bool anyCellWithValue = false;
+                for (int col = 1; col < Math.Min(currentRow.Count, metaRow.Count); col++)
                 {
                     if (string.IsNullOrEmpty(metaRow[col]) ||
                         string.IsNullOrEmpty(currentRow[col]))
@@ -83,7 +83,7 @@ namespace TheGame.GoogleSheet
                 builder.Append(tab);
                 builder.AppendLine("{");
 
-                for (var col = 1; col < Math.Min(currentRow.Count, metaRow.Count); col++)
+                for (int col = 1; col < Math.Min(currentRow.Count, metaRow.Count); col++)
                 {
                     if (string.IsNullOrEmpty(metaRow[col]) ||
                         string.IsNullOrEmpty(currentRow[col]))
@@ -91,7 +91,7 @@ namespace TheGame.GoogleSheet
                         continue;
                     }
 
-                    var cellData = currentRow[col];
+                    string cellData = currentRow[col];
                     cellData = cellData.Replace("$", "");
 
                     builder.Append(tab);
