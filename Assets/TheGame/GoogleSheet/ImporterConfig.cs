@@ -14,9 +14,9 @@ namespace TheGame.GoogleSheet
         [Button]
         private void Import()
         {
-            string outputPath = Path.Combine(Application.dataPath, this.outputPath);
+            string path = Path.Combine(Application.dataPath, outputPath);
 
-            ImportUtil.ImportRecursive(this, outputPath, 0);
+            ImporterUtil.AsyncImportRecursive(this, path, 0, 0);
         }
     }
 }

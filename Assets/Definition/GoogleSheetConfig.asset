@@ -16,6 +16,8 @@ MonoBehaviour:
   outputPath: Definition/
   sheets:
   - Item
+  - ItemShape
   - Augmentation
   - AugmentationCategory
-  - ItemShape
+  - Recipe
+  - RecipeGroup
