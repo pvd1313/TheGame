@@ -2,7 +2,7 @@ namespace TheGame.GoogleSheet.Editor
 {
     public class SheetMetadata
     {
-        public string sheetName;
+        public string fileName;
         public int headerRowCount;
     }
 }

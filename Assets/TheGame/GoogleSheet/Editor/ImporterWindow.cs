@@ -57,10 +57,11 @@ namespace TheGame.GoogleSheet.Editor
             {
                 Debug.LogError($"{sheetName} has no values");
                 return;
+                
             }
 
             SheetMetadata metadata = default;
-            
+
             try
             {
                 metadata = JsonConvert.DeserializeObject<SheetMetadata>(data.values[0][0]);
@@ -78,7 +79,7 @@ namespace TheGame.GoogleSheet.Editor
 
             var metaRow = data.values[0];
 
-            for (var row = metadata.headerRowCount + 1; row < data.values.Count; row++)
+            for (var row = metadata.headerRowCount; row < data.values.Count; row++)
             {
                 var currentRow = data.values[row];
                 
@@ -144,7 +145,7 @@ namespace TheGame.GoogleSheet.Editor
 
             builder.AppendLine("]");
             
-            File.WriteAllText(Path.Combine(outputFolder, sheetName + ".json"), builder.ToString(), Encoding.Unicode);
+            File.WriteAllText(Path.Combine(outputFolder, metadata.fileName), builder.ToString(), Encoding.Unicode);
         }
     }
 }
