@@ -1,6 +1,6 @@
-namespace TheGame.GoogleSheet.Editor
+namespace TheGame.GoogleSheet
 {
-    public class SheetMetadata
+    public class Metadata
     {
         public string fileName;
         public int headerRowCount;

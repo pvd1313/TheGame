@@ -2,56 +2,35 @@ using System;
 using System.IO;
 using System.Text;
 using GoogleSheetsToUnity;
-using Unity.Plastic.Newtonsoft.Json;
-using UnityEditor;
+using Newtonsoft.Json;
 using UnityEngine;
 
-namespace TheGame.GoogleSheet.Editor
+namespace TheGame.GoogleSheet
 {
-    public class ImporterWindow : EditorWindow
+    public static class ImportUtil
     {
-        private ImporterConfig _config;
-
-        private void OnGUI()
+        public static void ImportRecursive(ImporterConfig config, string outputPath, int depth)
         {
-            _config = (ImporterConfig) EditorGUILayout.ObjectField(_config, typeof(ImporterConfig), false);
-            
-            if (_config == null)
-            {
-                EditorGUILayout.LabelField("Select config to begin");
-                return;
-            }
-
-            if (GUILayout.Button("Import"))
-            {
-                var outputPath = Path.Combine(Application.dataPath, _config.ouputPath);
-
-                ImportRecursive(outputPath, 0);
-            }
-        }
-
-        private void ImportRecursive(string outputPath, int depth)
-        {
-            if (_config.sheets.Count == depth)
+            if (config.sheets.Count == depth)
             {
                 Debug.Log("All done");
                 return;
             }
 
-            var sheetName = _config.sheets[depth];
+            var sheetName = config.sheets[depth];
             
-            Debug.Log($"Fetching '{sheetName}' ({depth} / {_config.sheets.Count})...");
+            Debug.Log($"Fetching '{sheetName}' ({depth} / {config.sheets.Count})...");
             
-            GoogleSheetManager.Read(new GoogleSheetRequest(_config.fileId, sheetName), 
+            GoogleSheetManager.Read(new GoogleSheetRequest(config.fileId, sheetName), 
                 data =>
                 {
                     TryParseAndSaveData(outputPath, sheetName, data);
                     
-                    ImportRecursive(outputPath, depth + 1);
+                    ImportRecursive(config, outputPath, depth + 1);
                 });
         }
 
-        private void TryParseAndSaveData(string outputFolder, string sheetName, SpreadsheetData data)
+        private static void TryParseAndSaveData(string outputFolder, string sheetName, SpreadsheetData data)
         {
             if (data?.values == null || data.values.Count == 0 || data.values[0] == null)
             {
@@ -60,11 +39,11 @@ namespace TheGame.GoogleSheet.Editor
                 
             }
 
-            SheetMetadata metadata = default;
+            Metadata metadata = default;
 
             try
             {
-                metadata = JsonConvert.DeserializeObject<SheetMetadata>(data.values[0][0]);
+                metadata = JsonConvert.DeserializeObject<Metadata>(data.values[0][0]);
             }
             catch (Exception e)
             {
